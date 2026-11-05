@@ -1,5 +1,4 @@
 data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
 
 # ── IAM role for Lambda ───────────────────────────────────────────────────────
 
@@ -115,7 +114,8 @@ resource "aws_lambda_function" "cron" {
     variables = {
       APP_URL         = var.app_url
       CRON_SECRET_ARN = var.cron_secret_arn  # ARN, not the secret value
-      AWS_REGION      = data.aws_region.current.region
+      # NOTE: AWS_REGION is a Lambda-reserved env var and is injected
+      # automatically by the runtime — it must not be set here.
     }
   }
 

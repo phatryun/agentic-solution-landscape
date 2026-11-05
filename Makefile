@@ -1,6 +1,6 @@
 SHELL := /bin/zsh
 TF_DIR := terraform/environments/dev
-AWS_PROFILE ?= default
+AWS_PROFILE := nila-project
 AWS_REGION  ?= eu-west-1
 
 .PHONY: help install dev build lint \

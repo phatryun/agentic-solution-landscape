@@ -1,8 +1,36 @@
-resource "aws_amplify_app" "main" {
-  name         = var.prefix
-  repository   = var.github_repo != "" ? "https://github.com/${var.github_repo}" : null
-  access_token = var.github_token != "" ? var.github_token : null
+# ── Amplify app ──────────────────────────────────────────────────────────────
+# SSR (WEB_COMPUTE) apps must be deployed via a connected Git provider — Amplify
+# does NOT support manual deploys for SSR. We connect a GitHub repository so
+# Amplify builds and deploys the Next.js app natively on push to `main`.
+#
+# github_repo  : https URL of the GitHub repo (e.g. https://github.com/org/app)
+# github_token : GitHub Personal Access Token with `repo` + `admin:repo_hook`
+#                scopes, passed at apply time (never committed).
 
+locals {
+  git_connected = var.github_repo != "" && var.github_token != ""
+}
+
+resource "aws_amplify_app" "main" {
+  name = var.prefix
+
+  # Connect the GitHub repository for native SSR builds. When no repo/token is
+  # provided these are null and the app has no Git connection.
+  repository   = local.git_connected ? var.github_repo : null
+  access_token = local.git_connected ? var.github_token : null
+
+  platform = "WEB_COMPUTE"
+
+  # Only non-sensitive config is passed as env vars. Secrets are resolved at
+  # runtime from Secrets Manager via secret ARNs using the
+  # {{resolve:secretsmanager:...}} syntax in the app code.
+  environment_variables = var.environment_variables
+
+  # Auto-build on push only when a Git provider is connected.
+  enable_branch_auto_build    = local.git_connected
+  enable_auto_branch_creation = false
+
+  # Inline build spec for Next.js SSR (also present as amplify.yml in the repo).
   build_spec = <<-YAML
     version: 1
     frontend:
@@ -20,24 +48,9 @@ resource "aws_amplify_app" "main" {
           - '**/*'
       cache:
         paths:
-          - node_modules/**/*
           - .next/cache/**/*
+          - node_modules/**/*
   YAML
-
-  # Only non-sensitive config is passed as env vars.
-  # Secrets are resolved at runtime from Secrets Manager via secret ARNs
-  # using the {{resolve:secretsmanager:...}} syntax in the app code.
-  environment_variables = var.environment_variables
-
-  platform = "WEB_COMPUTE"
-
-  # Deploy ONLY on push to connected branches (main). Do not auto-create or
-  # auto-build any other branch (feature branches, PRs).
-  enable_branch_auto_build    = false
-  enable_auto_branch_creation = false
-
-  # No SPA fallback rule — conflicts with Next.js SSR WEB_COMPUTE mode.
-  # Next.js App Router handles 404s itself via the not-found.tsx convention.
 }
 
 resource "aws_amplify_branch" "main" {
@@ -46,8 +59,8 @@ resource "aws_amplify_branch" "main" {
   framework   = "Next.js - SSR"
   stage       = "PRODUCTION"
 
-  # Auto-deploy this branch on every push/merge to main.
-  enable_auto_build = true
+  # Build this branch automatically on push when Git is connected.
+  enable_auto_build = local.git_connected
 
   environment_variables = {}
 }

@@ -96,10 +96,21 @@ module "s3" {
   prefix = local.prefix
 }
 
+# ── Bastion (ephemeral, opt-in) — SSM tunnel to private RDS for migrations ────
+
+module "bastion" {
+  source            = "../../modules/bastion"
+  count             = var.enable_bastion ? 1 : 0
+  prefix            = local.prefix
+  vpc_id            = module.vpc.vpc_id
+  private_subnet_id = module.vpc.private_subnet_ids[0]
+}
+
 # ── Bedrock ───────────────────────────────────────────────────────────────────
 
 module "bedrock" {
   source               = "../../modules/bedrock"
+  count                = var.enable_bedrock ? 1 : 0
   prefix               = local.prefix
   s3_vault_bucket_arn  = module.s3.vault_bucket_arn
   s3_vector_bucket_arn = module.s3.vector_bucket_arn
@@ -134,16 +145,18 @@ module "amplify" {
   # Secrets are resolved at runtime from Secrets Manager using their ARNs.
   environment_variables = {
     NEXT_PUBLIC_APP_URL       = var.app_url
-    AWS_REGION                = var.aws_region
+    # NOTE: AWS_REGION cannot be set here — Amplify rejects env vars with the
+    # reserved "AWS" prefix. Amplify WEB_COMPUTE injects AWS_REGION at runtime
+    # automatically, so the app's process.env.AWS_REGION resolves correctly.
     COGNITO_USER_POOL_ID      = module.cognito.user_pool_id
     COGNITO_CLIENT_ID         = module.cognito.client_id
     COGNITO_ISSUER            = module.cognito.issuer
     S3_VAULT_BUCKET           = module.s3.vault_bucket_name
     S3_VECTOR_BUCKET          = module.s3.vector_bucket_name
     S3_VECTOR_INDEX           = "genai-solutions"
-    BEDROCK_AGENT_ID          = module.bedrock.agent_id
-    BEDROCK_AGENT_ALIAS_ID    = module.bedrock.agent_alias_id
-    BEDROCK_KNOWLEDGE_BASE_ID = module.bedrock.knowledge_base_id
+    BEDROCK_AGENT_ID          = var.enable_bedrock ? module.bedrock[0].agent_id : ""
+    BEDROCK_AGENT_ALIAS_ID    = var.enable_bedrock ? module.bedrock[0].agent_alias_id : ""
+    BEDROCK_KNOWLEDGE_BASE_ID = var.enable_bedrock ? module.bedrock[0].knowledge_base_id : ""
     BEDROCK_MODEL_ID          = "eu.anthropic.claude-sonnet-4-20250514-v1:0"
     NEXTAUTH_URL              = var.app_url
 

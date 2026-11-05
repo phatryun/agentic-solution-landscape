@@ -35,6 +35,8 @@ resource "aws_cognito_user_pool" "main" {
 }
 
 resource "aws_cognito_identity_provider" "google" {
+  count = var.google_client_id != "" ? 1 : 0
+
   user_pool_id  = aws_cognito_user_pool.main.id
   provider_name = "Google"
   provider_type = "Google"
@@ -71,8 +73,11 @@ resource "aws_cognito_user_pool_client" "app" {
     "http://localhost:3000",
   ]
 
-  # Google logins are federated through Cognito — no direct Google NextAuth provider
-  supported_identity_providers = ["COGNITO", "Google"]
+  # Google logins are federated through Cognito only when an IdP is configured.
+  supported_identity_providers = var.google_client_id != "" ? ["COGNITO", "Google"] : ["COGNITO"]
+
+  # Ensure the Google IdP exists before the client references it.
+  depends_on = [aws_cognito_identity_provider.google]
 
   # ALLOW_USER_PASSWORD_AUTH removed — use SRP only (passwords never travel in plaintext)
   explicit_auth_flows = [

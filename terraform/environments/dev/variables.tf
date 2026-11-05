@@ -57,6 +57,18 @@ variable "cron_secret" {
   sensitive   = true
 }
 
+variable "enable_bastion" {
+  description = "Create an ephemeral SSM bastion in a private subnet for DB access (migrations). Destroy after use."
+  type        = bool
+  default     = false
+}
+
+variable "enable_bedrock" {
+  description = "Create Bedrock Agent + Knowledge Base. Disable if an org SCP blocks bedrock:CreateAgent/CreateKnowledgeBase."
+  type        = bool
+  default     = false
+}
+
 variable "github_repo" {
   description = "GitHub repo for Amplify (format: user/repo)"
   type        = string

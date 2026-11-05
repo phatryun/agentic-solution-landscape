@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Required for AWS Amplify WEB_COMPUTE manual deploys: produces a
+  // self-contained server bundle under .next/standalone that we map into
+  // the .amplify-hosting/compute/default directory.
+  output: "standalone",
   experimental: {
     serverComponentsExternalPackages: ["@prisma/client"],
   },
