@@ -1,0 +1,138 @@
+// Prisma schema — GenAI Landscape
+// DB: Amazon RDS PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  image         String?
+  cognitoSub    String?      @unique // Cognito user sub
+  role          Role         @default(USER)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  submissions   Submission[]
+  searches      SearchLog[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
+// ── Solutions (mirror of S3 .md metadata) ────────────────────────────────────
+model Solution {
+  id            String       @id @default(cuid())
+  slug          String       @unique  // matches filename in S3: solutions/<slug>.md
+  name          String
+  categorySlug  String
+  category      Category     @relation(fields: [categorySlug], references: [slug])
+  tags          String[]
+  website       String?
+  github        String?
+  logo          String?        // same-origin path to stored logo, e.g. /api/logos/<slug>
+  status        SolutionStatus @default(ACTIVE)
+  approvedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  submissions   Submission[]
+
+  @@map("solutions")
+}
+
+enum SolutionStatus {
+  ACTIVE
+  DEPRECATED
+  PENDING
+}
+
+// ── Categories ────────────────────────────────────────────────────────────────
+model Category {
+  slug          String       @id  // matches filename in S3: categories/<slug>.md
+  name          String
+  description   String?
+  color         String?      // hex color for landscape visualization
+  icon          String?      // lucide icon name
+  order         Int          @default(0)
+
+  solutions     Solution[]
+
+  @@map("categories")
+}
+
+// ── Submissions (user-proposed new tools) ────────────────────────────────────
+model Submission {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id])
+  solutionId    String?          // set when approved and linked to a solution
+  solution      Solution?        @relation(fields: [solutionId], references: [id])
+
+  name          String
+  website       String
+  description   String
+  categorySlug  String
+  tags          String[]
+  github        String?
+  logo          String?          // optional explicit logo URL provided by submitter
+
+  status        SubmissionStatus @default(PENDING)
+  reviewNotes   String?
+  reviewedAt    DateTime?
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("submissions")
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ── Agent scan logs ───────────────────────────────────────────────────────────
+model AgentScanLog {
+  id            String       @id @default(cuid())
+  startedAt     DateTime     @default(now())
+  completedAt   DateTime?
+  status        ScanStatus   @default(RUNNING)
+  newSolutions  Int          @default(0)
+  updatedSolutions Int       @default(0)
+  errorMessage  String?
+
+  @@map("agent_scan_logs")
+}
+
+enum ScanStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ── Search logs ───────────────────────────────────────────────────────────────
+model SearchLog {
+  id            String       @id @default(cuid())
+  userId        String?
+  user          User?        @relation(fields: [userId], references: [id])
+  query         String
+  resultCount   Int          @default(0)
+  createdAt     DateTime     @default(now())
+
+  @@map("search_logs")
+}

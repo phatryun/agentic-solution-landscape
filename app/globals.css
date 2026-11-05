@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Art direction — "Terminal Neon"
+ * Dark-first, glass surfaces, electric violet→cyan accent, technical mono labels.
+ * Grounded in the present (dev-tool / AI-lab aesthetic) with a distinct signature.
+ */
+
+@layer base {
+  :root {
+    /* Light theme kept as a graceful fallback, but the app ships dark-first. */
+    --background: 240 20% 99%;
+    --foreground: 240 10% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 8%;
+    --border: 240 10% 90%;
+    --input: 240 10% 90%;
+    --primary: 265 85% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 10% 95%;
+    --secondary-foreground: 240 10% 12%;
+    --muted: 240 10% 95%;
+    --muted-foreground: 240 6% 42%;
+    --accent: 190 95% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 265 85% 58%;
+    --radius: 0.375rem;
+
+    /* Signature accent stops (used by gradients/glow utilities) */
+    --neon-from: 265 90% 62%;
+    --neon-via: 230 90% 60%;
+    --neon-to: 190 95% 55%;
+  }
+
+  .dark {
+    --background: 240 30% 4%;      /* ~ #0a0a0f */
+    --foreground: 240 15% 96%;
+    --card: 240 24% 7%;            /* glass base */
+    --card-foreground: 240 15% 96%;
+    --border: 240 15% 16%;
+    --input: 240 15% 16%;
+    --primary: 265 90% 66%;
+    --primary-foreground: 240 30% 6%;
+    --secondary: 240 18% 12%;
+    --secondary-foreground: 240 15% 92%;
+    --muted: 240 18% 12%;
+    --muted-foreground: 240 10% 60%;
+    --accent: 190 95% 55%;
+    --accent-foreground: 240 30% 6%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 265 90% 66%;
+
+    --neon-from: 265 90% 66%;
+    --neon-via: 230 90% 64%;
+    --neon-to: 190 95% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Subtle technical grid + radial accent glow anchored top-center. */
+    background-image:
+      radial-gradient(60rem 40rem at 50% -10%, hsl(var(--neon-via) / 0.14), transparent 60%),
+      radial-gradient(40rem 30rem at 100% 0%, hsl(var(--neon-to) / 0.10), transparent 60%),
+      linear-gradient(to right, hsl(var(--border) / 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.35) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 2.5rem 2.5rem, 2.5rem 2.5rem;
+    background-attachment: fixed;
+  }
+
+  /* Monospace for technical data: counts, labels, slugs, meta. */
+  .font-mono,
+  code,
+  kbd {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+}
+
+@layer components {
+  /* Glass surface — translucent card with a faint inner highlight. */
+  .glass {
+    background-color: hsl(var(--card) / 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.8);
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.04),
+      0 8px 30px -12px hsl(240 60% 2% / 0.6);
+  }
+
+  /* Hover glow for interactive surfaces. */
+  .glow-hover {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .glow-hover:hover {
+    border-color: hsl(var(--primary) / 0.6);
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3), 0 0 24px -4px hsl(var(--primary) / 0.45);
+  }
+}
+
+@layer utilities {
+  /* Electric gradient text for titles. */
+  .text-gradient {
+    background-image: linear-gradient(
+      100deg,
+      hsl(var(--neon-from)),
+      hsl(var(--neon-via)),
+      hsl(var(--neon-to))
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-neon {
+    background-image: linear-gradient(
+      100deg,
+      hsl(var(--neon-from)),
+      hsl(var(--neon-via)),
+      hsl(var(--neon-to))
+    );
+  }
+}
